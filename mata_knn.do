@@ -21,7 +21,7 @@ capture mata: mata drop knn()
 
 mata
 struct kd_node {
-	/* container to hold a node, and possibly a pointer to child nodes */
+	/* container to hold the node of a tree, and possibly a pointer to its child nodes */
 	real scalar idx, axis, value
 	real vector point
 	pointer(struct kd_node) left, right
@@ -49,8 +49,16 @@ real scalar median(real matrix values) {
 
 struct kd_node kd_tree_build(real matrix data, real matrix index, real scalar Ndim, real scalar axis, real scalar max_rec_depth) {
 	/* From a given set of data along with an index variable, construct
-	a search tree. Note that data must be a N x Ndim matrix, and index must
-	be a N x 1 Matrix. orientation is the dimension along which to split first */
+	a search tree. 
+	
+	Syntax:
+		data			N x Ndim matrix of unique point coordinates
+		index			N x 1 matrix which contains an index variable 
+		Ndim			dimension of the points (passed explicitly to avoid repeated calls to cols)
+		axis			axis along which to split this time
+		max_rec_depth 	maximum recursion depth of the tree
+	
+	*/
 	
 	struct kd_node scalar thisnode /* 'scalar' is required! */
 	real matrix left_set, right_set, left_idx, right_idx
@@ -58,9 +66,9 @@ struct kd_node kd_tree_build(real matrix data, real matrix index, real scalar Nd
 	thisnode.axis = axis
 	
 	if (max_rec_depth==0) {
-		display("Maximum number of recursions has been reached. Check if there are data duplicates!")
-		display("Currently splitting along axis " + strofreal(axis))
-		display("Remaining data (first row is ID):")
+		display("{error:Maximum number of recursions has been reached. Check if there are data duplicates!}")
+		display("{error:Currently splitting along axis} " + strofreal(axis))
+		display("{error:Remaining data in this node (first row is ID):}")
 		(index,data)
 		exit(1)
 	}
@@ -98,6 +106,7 @@ struct kd_node kd_tree_build(real matrix data, real matrix index, real scalar Nd
 }
 
 void kd_tree_print(struct kd_node scalar root) {
+	/* print the contents of ALL tree nodes */
 	if (root.left == NULL & root.right == NULL) {
 		display("idx: " + strofreal(root.idx) + " axis: " + strofreal(root.axis))
 	}
@@ -136,30 +145,50 @@ real scalar kd_tree_depth(struct kd_node scalar root) {
 
 void find_nn(real vector query_coord, struct kd_node scalar thisnode, 
 	real vector nearest_coord, real scalar nearest_idx, real scalar nearest_dist) {
+	/* find the nearest neighbour of query_coord within the set of points encoded
+	in the searchtree thisnode. 
+	
+	Syntax:
+		query_coord		1 x Ndim matrix
+		thisnode		a node of a search tree
+		nearest_coord	output: coordinates of nearest point
+		nearest_idx		output: ID of nearest point
+		nearest_dist	output: distance to nearest point
+	*/
+	
 	real scalar dist
+	
 	if (thisnode.left == NULL & thisnode.right == NULL) {
+		/* found a terminal node */
+		
 		dist = sqrt(sum((query_coord :- thisnode.point):^2))
-		/*display("  found a leaf with idx = " + strofreal(thisnode.idx) + ", dist = " + strofreal(dist))*/
-		if (dist < nearest_dist) {
-			/*display("  this is closer than the previous point.")*/
+
+		if (dist < nearest_dist) {		
+			/* this point is closer than the previous closest point */
 			nearest_dist 	= dist
 			nearest_coord   = thisnode.point
 			nearest_idx     = thisnode.idx
 		}
 	}
+	
 	else {
-		if (query_coord[thisnode.axis] <= thisnode.value) {
-			/*display("search first to the left of axis " + strofreal(thisnode.axis))*/
-			/*if (query_coord[thisnode.axis] - nearest_dist <= thisnode.value)*/ /* this is implied by previous if-condition */
-				find_nn(query_coord, *thisnode.left, nearest_coord, nearest_idx, nearest_dist)
+		/* pass the search on to child nodes */
+		
+		if (query_coord[thisnode.axis] <= thisnode.value) { 					
+		
+			/* in this case, search first to the left of current axis */
+			find_nn(query_coord, *thisnode.left, nearest_coord, nearest_idx, nearest_dist)
+			
 			if (query_coord[thisnode.axis] + nearest_dist > thisnode.value)
+				/* there is a chance that the right node contains closer points */
 				find_nn(query_coord, *thisnode.right, nearest_coord, nearest_idx, nearest_dist)
 		}
 		else {
-			/*display("search first to the right of axis " + strofreal(thisnode.axis))*/
-			/*if (query_coord[thisnode.axis] + nearest_dist > thisnode.value)*/
+		
+			/* now, search first to the right of the current axis */
 				find_nn(query_coord, *thisnode.right, nearest_coord, nearest_idx, nearest_dist)	
 			if (query_coord[thisnode.axis] - nearest_dist <= thisnode.value)
+				/* here we also need to check the left node */
 				find_nn(query_coord, *thisnode.left, nearest_coord, nearest_idx, nearest_dist)				
 		}
 	}
@@ -167,18 +196,26 @@ void find_nn(real vector query_coord, struct kd_node scalar thisnode,
 
 void find_knn(real vector query_coord, struct kd_node scalar thisnode, 
 	real scalar k, real vector kni, real vector knd, real scalar knd_maxid) {
-	/* kni and knd are k-dim vectors holding the current k nearest neighbours
-	and distances, respectively. The currently _largest_ distance is found
-	in knd[knd_maxid]. */
+	/* find the k nearest neighbours of a point in a search tree.
 	
-	/*display("Current worst knd = " + strofreal(knd[knd_maxid]) + " at " + strofreal(knd_maxid))*/
+	Syntax:
+		query_coord		1 x Ndim matrix
+		thisnode		a node of a search tree
+		k				how many nearest neighbours should be searched for
+		kni				output: coordinates of k nearest points (unordered)
+		knd				output: distances to k nearest points (unordered)
+		knd_maxid		position of largest element in knd
+	*/
+	
 	real scalar dist
 	real vector i
+	
 	if (thisnode.left == NULL & thisnode.right == NULL) {
+		/* found a terminal node */
 		dist = sqrt(sum((query_coord :- thisnode.point):^2))
-		/*display("  found a leaf with idx = " + strofreal(thisnode.idx) + ", dist = " + strofreal(dist))*/
+		
 		if (dist < knd[knd_maxid]) {
-			/*display("  this is closer than the previous worst point.")*/
+			/* distance to this node is closer than previous max point */
 			knd[knd_maxid] 	= dist
 			kni[knd_maxid]  = thisnode.idx
 			/* find new position of the maximum */
@@ -188,16 +225,14 @@ void find_knn(real vector query_coord, struct kd_node scalar thisnode,
 	}
 	else {
 		if (query_coord[thisnode.axis] <= thisnode.value) {
-			/*" search first to the left "*/
-			/*if (query_coord[thisnode.axis] - knd[knd_maxid] <= thisnode.value)*/ /* this condition is superfluous because the above if cond already implies this!*/
+			/* search first to the left */
 			if (thisnode.left != NULL)
 				find_knn(query_coord, *thisnode.left,  k, kni, knd, knd_maxid)
 			if (thisnode.right != NULL & query_coord[thisnode.axis] + knd[knd_maxid] > thisnode.value)
 				find_knn(query_coord, *thisnode.right, k, kni, knd, knd_maxid)
 		}
 		else {
-			/*" search first to the right "*/
-			/*if (query_coord[thisnode.axis] + knd[knd_maxid] > thisnode.value)*/ /* this condition is superfluous because the above if cond already implies this!*/
+			/* search first to the right */
 			if (thisnode.right != NULL)
 				find_knn(query_coord, *thisnode.right, k, kni, knd, knd_maxid)
 			if (thisnode.left != NULL & query_coord[thisnode.axis] - knd[knd_maxid] <= thisnode.value)
@@ -208,12 +243,22 @@ void find_knn(real vector query_coord, struct kd_node scalar thisnode,
 
 void knn(real matrix query_coords, real matrix data_coords,
 	real scalar k, real matrix kni, real matrix knd, |real scalar max_rec_depth) {
+	/* compute k nearest neighbours among data_coords for each of query_points
 	
-	/* just a wrapper around find_knn and kd_tree_build for convenience */
+	This is just a wrapper around find_knn and kd_tree_build for convenience. 
+	
+	Syntax:
+		query_coords	M x Ndim matrix of query coordinates
+		data_coords		N x Ndim matrix of query coordinates (could be same as query_coords)
+		k				how many nearest neighbours should be searched for
+		kni				output: coordinates of k nearest points (unordered)
+		knd				output: distances to k nearest points (unordered)
+		max_rec_depth	maximum recursion depth of search tree (optional)
+	*/
 	
 	real scalar Nqueries,  Ndim, maxdist, first_axis, Ndata1percent, q
 	real vector index, span, knd_q, kni_q, sort_knd /*, coord_q, coord_q_old*/
-	struct kd_node scalar root /* scalar is required here */
+	struct kd_node scalar root /* scalar is required here! */
 	
 	/*timer_on(5)*/
 	/* a few dimension checks and set ups */
@@ -227,7 +272,8 @@ void knn(real matrix query_coords, real matrix data_coords,
 	
 	/* check that all points are distinct (else the kd tree gros unbounded */
 	if (rows(data_coords) != rows(uniqrows(data_coords))) {
-		display("data_coords contains duplicates")
+		display("{error:data_coords contains duplicates, and this is not permitted.}")
+		display("{error:Consider dropping duplicates, or permuting them slightly to make them unique.}")
 		exit(1)
 	}
 	
@@ -257,22 +303,20 @@ void knn(real matrix query_coords, real matrix data_coords,
 	display("Finding " + strofreal(k) + " nearest neighbours for " + strofreal(Nqueries) + " query points. Each . = 1% ...")
 	Ndata1percent = trunc(Nqueries/100)
 	for (q=1; q<=Nqueries; q++) {
-		/*find_knn(query_coords[q,], root, k, kni[q,], knd[q,], 1)*/
-		/* this turns out to be four times faster: */
-		/*coord_q = query_coords[q,]*/
-		kni_q = kni_q*0 /* need to reset each time? */
-		/* If we know knd_max(q), the largest knd of point q, and the distance ||q-q'||,
-		then knd_max(q') <= knd_max(q) + ||q-q'||. I planned to "update" the knd vector
-		but this does not work so easily, because the tree has to be traversed from the
-		start and setting knd too low breaks this!*/
-		/*knd_q = knd_q*0 :+ sum(abs(coord_q:-coord_q_old))*2*/
+		
+		/* reset index and distance to k nearest neighbours */
+		kni_q = kni_q*0
 		knd_q = knd_q :+ maxdist
+		
+		/* find k nearest neighbours for point q */
 		find_knn(query_coords[q,], root, k, kni_q, knd_q, 1)
-		sort_knd = order(knd_q', 1)'
+		
+		/* sort the unordered vectors, and store */
+		sort_knd = order(knd_q', 1)' 
 		kni[q,] = kni_q[sort_knd]
 		knd[q,] = knd_q[sort_knd]
-		/*swap(coord_q, coord_q_old)*/
-		/* impact of the following on speed is < 10% */
+		
+		/* progress report */
 		if (!mod(q, Ndata1percent)) {
 			printf(".")
 			displayflush() /* override buffering, force display */
