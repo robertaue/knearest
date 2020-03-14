@@ -63,11 +63,12 @@ struct kd_node kd_tree_build(real matrix data, real matrix index, real scalar Nd
 	
 	struct kd_node scalar thisnode /* 'scalar' is required! */
 	real matrix left_set, right_set, left_idx, right_idx
-	real scalar axis_new
+	real scalar axis_new, eps
 	thisnode.axis = axis
 	
-	if (max_rec_depth==0) {
-		display("{error:Maximum number of recursions has been reached. Check if there are data duplicates!}")
+	if (max_rec_depth==-5) { /* added extra margin in case the are duplicates in one coordinate */
+		display("{error:Maximum number of recursions has been reached.}")
+		display("{error:Check if there are data duplicates or increase max_recursion_depth!}")
 		display("{error:Currently splitting along axis} " + strofreal(axis))
 		display("{error:Remaining data in this node (first row is ID):}")
 		(index,data)
@@ -79,10 +80,21 @@ struct kd_node kd_tree_build(real matrix data, real matrix index, real scalar Nd
 		thisnode.value = median(data[,axis])
 		
 		/* pass on remaining data to left and right child nodes */
-		left_set  = select(data,  data[,axis] :<= thisnode.value)
 		left_idx  = select(index, data[,axis] :<= thisnode.value)
-		right_set = select(data,  data[,axis] :>  thisnode.value)
 		right_idx = select(index, data[,axis] :>  thisnode.value)
+		
+		/* address issue when one axis has duplicate values in which the median my fail to split the set */
+		if ( length(left_idx)==0 || length(right_idx)==0 ) {
+			/* if this happens, perturb the data by a "tiny" amount (this is very ad hoc) */
+			eps = max( (1e-8, (max(data[,axis])-min(data[,axis]))/10000) )
+			data[,axis] = data[,axis] + runiform( rows(data), 1 ) * eps
+			/* ... and re-compute the left and right sets */
+			left_idx  = select(index, data[,axis] :<= thisnode.value)
+			right_idx = select(index, data[,axis] :>  thisnode.value)
+		}
+		
+		left_set  = select(data,  data[,axis] :<= thisnode.value)
+		right_set = select(data,  data[,axis] :>  thisnode.value)
 		
 		/* cycle through the dimensions and continue with remaining points*/
 		axis_new = mod(axis, Ndim) + 1
@@ -252,8 +264,8 @@ void knn(real matrix query_coords, real matrix data_coords,
 		query_coords	M x Ndim matrix of query coordinates
 		data_coords		N x Ndim matrix of query coordinates (could be same as query_coords)
 		k				how many nearest neighbours should be searched for
-		kni				output: coordinates of k nearest points (unordered)
-		knd				output: distances to k nearest points (unordered)
+		kni				output: coordinates of k nearest points
+		knd				output: distances to k nearest points
 		max_rec_depth	maximum recursion depth of search tree (optional)
 	*/
 	
