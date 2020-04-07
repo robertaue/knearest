@@ -30,8 +30,9 @@ Currently, only data sets with {it:Ndim>1} are supported.
 
 {title:Description}
 
+{pstd}
 For every point specified in {it:query_coords}, this function computes the {it:k} nearest neighbours in the
-data points contained in {it:data_coords}. Of course, these two matrices could be same. Results are stored
+data points contained in {it:data_coords}. Of course, these two matrices could be the same. Results are stored
 in {it:kni} and {it:knd}. It has some overhead, so may not be quicker than the brute force approach if
 the number of observations is very small. For large data sets, it runs much faster than brute force. 
 Currently
