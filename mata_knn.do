@@ -270,7 +270,7 @@ void knn(real matrix query_coords, real matrix data_coords,
 	*/
 	
 	real scalar Nqueries,  Ndim, maxdist, first_axis, Ndata1percent, q
-	real vector index, span, knd_q, kni_q, sort_knd /*, coord_q, coord_q_old*/
+	real vector j, index, span, knd_q, kni_q, sort_knd /*, coord_q, coord_q_old*/
 	struct kd_node scalar root /* scalar is required here! */
 	
 	/*timer_on(5)*/
@@ -299,8 +299,9 @@ void knn(real matrix query_coords, real matrix data_coords,
 	knd_q = J(1,k,maxdist)
 	
 	/* find first axis (whichever has larger span) */
-	if (abs(span)[1]>=abs(span[2])) first_axis = 1
-	else first_axis = 2
+	maxindex(abs(span), 1, j, .)
+	first_axis = j[1]
+
 	
 	/*timer_off(5)
 	timer_on(6)*/
