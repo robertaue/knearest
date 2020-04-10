@@ -27,7 +27,7 @@ program knn
 	qui duplicates report `varlist' `if' `in'
 	*return list
 	if r(unique_value) < r(N) {
-		di in red _newline "Duplicate values in `varlist' not allowed"
+		di in red _newline "Duplicate values in `varlist' not allowed. Consider adding a small random permutation to your data."
 		error 9
 	}
 	
