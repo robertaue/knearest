@@ -96,11 +96,11 @@ struct kd_node kd_tree_build(real matrix data, real matrix index, real scalar Nd
 		/* cycle through the dimensions and continue with remaining points*/
 		axis_new = mod(axis, Ndim) + 1
 		if (rows(left_sel)>=1) {
-			thisnode.left =  &kd_tree_build(data[left_sel,axis], index[left_sel], Ndim, axis_new, max_rec_depth-1)
+			thisnode.left =  &kd_tree_build(data[left_sel,], index[left_sel], Ndim, axis_new, max_rec_depth-1)
 		}
 		else thisnode.left = NULL
 		if (rows(right_sel)>=1) {
-			thisnode.right = &kd_tree_build(data[right_sel,axis], index[right_sel], Ndim, axis_new, max_rec_depth-1)
+			thisnode.right = &kd_tree_build(data[right_sel,], index[right_sel], Ndim, axis_new, max_rec_depth-1)
 		}
 		else thisnode.right = NULL
 	}
