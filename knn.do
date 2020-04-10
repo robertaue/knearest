@@ -21,7 +21,6 @@ program knn
 	version 15
 	syntax varlist(numeric min=2) [if] [in], [Knearest(integer 1)] knd(namelist) kni(namelist)
 	marksample touse
-	local k = `knearest'+1 // self will always be returned by knn
 	
 	// check that data have no duplicates
 	qui duplicates report `varlist' `if' `in'
@@ -46,20 +45,38 @@ program knn
 		error 9
 	}
 	
-	// store coordinate matrices 
-	tempvar id
-	qui gen `id' = _n // needed to assign matrices to correct entries if only subset of data is used
-	qui putmata __coords=(`varlist') __id=`id' `if' `in', replace
+	// initialize results variables (aborts if variables already exist - this is desired)
+	forvalues q=1/`knearest' {
+		qui gen long `kni'`q' = .
+		qui gen double `knd'`q' = .
+	}
 	
 	// run the search algorithm
-	mata: knn(__coords, __coords, `k', __kni=., __knd=.)
+	mata: knn_wrapper("`varlist'", `knearest', "`kni'", "`knd'", "`touse'")
 	
-	// get results
-	mata: __knd = __knd[,2::`k'] // discard distance to 'self'
-	mata: __kni = __kni[,2::`k'] // discard index to 'self'
-	mata: for (q=1;q<=cols(__kni);q++) __kni[,q] = __id[__kni[,q]] // re-project nearest indices to original id variable
-	qui getmata (`knd'*)=__knd (`kni'*)=__kni, id("`id'"=__id)
-	mata: mata drop __coords __knd __kni __id q
+end
+
+capture mata: mata drop knn_wrapper()
+mata
+	void knn_wrapper(coord_vars, knearest, kni_stub, knd_stub, touse) {
+		real matrix coords, kni, knd
+		real vector idx
+		real scalar k
+		
+		/* load data to mata, so variables will be private to knn_wrapper() */
+		st_view(coords=., ., coord_vars, touse)
+		idx = st_viewobs(coords)
+		
+		/* run the search */
+		knn(coords, coords, knearest+1, kni=., knd=., ., idx) /* k+1 bec. self will always be returned by knn */
+		
+		/* transfer results to Stata */
+		for (k=1; k<=knearest; k++) {
+			/* start at q=2 to discard index reference to 'self' */
+			st_store(., kni_stub+strofreal(k), touse, kni[,(k+1)]) 
+			st_store(., knd_stub+strofreal(k), touse, knd[,(k+1)]) 
+		}
+	}
 end
 
 
