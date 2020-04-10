@@ -255,7 +255,7 @@ void find_knn(real vector query_coord, struct kd_node scalar thisnode,
 }
 
 void knn(real matrix query_coords, real matrix data_coords,
-	real scalar k, real matrix kni, real matrix knd, |real scalar max_rec_depth) {
+	real scalar k, real matrix kni, real matrix knd, |real scalar max_rec_depth, real vector index) {
 	/* compute k nearest neighbours among data_coords for each of query_points
 	
 	This is just a wrapper around find_knn and kd_tree_build for convenience. 
@@ -266,11 +266,12 @@ void knn(real matrix query_coords, real matrix data_coords,
 		k				how many nearest neighbours should be searched for
 		kni				output: coordinates of k nearest points
 		knd				output: distances to k nearest points
-		max_rec_depth	maximum recursion depth of search tree (optional)
+		max_rec_depth	(optional) maximum recursion depth of search tree
+		index			(optional) index numbers of the data. if missing, 1::N will be used.
 	*/
 	
 	real scalar Nqueries,  Ndim, maxdist, first_axis, Ndata1percent, q
-	real vector j, index, span, knd_q, kni_q, sort_knd /*, coord_q, coord_q_old*/
+	real vector j, span, knd_q, kni_q, sort_knd /*, coord_q, coord_q_old*/
 	struct kd_node scalar root /* scalar is required here! */
 	
 	/*timer_on(5)*/
@@ -278,8 +279,9 @@ void knn(real matrix query_coords, real matrix data_coords,
 	Nqueries = rows(query_coords)
 	assert(cols(query_coords) == cols(data_coords))
 	Ndim = cols(query_coords)
-	index = (1::rows(data_coords))
-	if (args()<6) max_rec_depth = ceil(ln(rows(data_coords))/ln(2)) + 1
+	if (index==J(1,0,.)) index = (1::rows(data_coords)) /* see help m2_optargs */
+	else assert(length(index) == rows(data_coords))
+	if (max_rec_depth==.) max_rec_depth = ceil(ln(rows(data_coords))/ln(2)) + 1
 	/*coord_q_old = query_coords[1,]
 	coord_q = query_coords[1,]*/
 	

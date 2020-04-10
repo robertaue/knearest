@@ -11,7 +11,7 @@ mata
 display("TEST: knn()")
 k = 10 		/* number of nearest neighbours to search for */
 d = 3  		/* dimension of data points */
-N = 1000	/* number of data points */
+N = 10000	/* number of data points */
 Ntests = 1	/* number of test runs with randomly generated data */
 
 N_kni_errors = 0
@@ -39,9 +39,10 @@ display("Number of wrong nearest neighbours:  " + strofreal(N_kni_errors))
 display("Maximum absolute error of distances: " + strofreal(max_abs_knd_error))
 	
 
-
-/* build the tree */
-
+display("TEST: knn() with pre-specified index")
+idx = 1::rows(data)
+knn(data, data, k, kni_2=., knd=., max_rec_depth=., index=idx)
+display("Number of wrong nearest neighbours:  " + strofreal(sum(kni:!=kni_2)))
 
 
 end
