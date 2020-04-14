@@ -121,8 +121,12 @@ void kd_tree_print(struct kd_node scalar root) {
 		display("idx: " + strofreal(root.idx) + " axis: " + strofreal(root.axis))
 	}
 	else {
-		kd_tree_print(*root.left)
-		kd_tree_print(*root.right)
+		if (root.left != NULL) { 
+			kd_tree_print(*root.left) 
+		}
+		if (root.right != NULL) { 
+			kd_tree_print(*root.right) 
+		}
 	}
 }
 
