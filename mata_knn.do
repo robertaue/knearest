@@ -70,7 +70,7 @@ struct kd_node kd_tree_build(real matrix data, real matrix index, real scalar Nd
 		display("{error:Maximum number of recursions has been reached.}")
 		display("{error:Check if there are data duplicates or increase max_recursion_depth!}")
 		display("{error:Currently splitting along axis} " + strofreal(axis))
-		display("{error:Remaining data in this node (first row is ID):}")
+		display("{error:Remaining data in this node (first column is ID):}")
 		(index,data)
 		exit(1)
 	}
