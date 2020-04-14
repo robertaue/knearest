@@ -62,15 +62,15 @@ struct kd_node kd_tree_build(real matrix data, real matrix index, real scalar Nd
 	*/
 	
 	struct kd_node scalar thisnode /* 'scalar' is required! */
-	real matrix left_set, right_set, left_idx, right_idx
-	real scalar axis_new, eps
+	real vector left_sel, right_sel
+	real scalar axis_new
 	thisnode.axis = axis
 	
 	if (max_rec_depth==-5) { /* added extra margin in case the are duplicates in one coordinate */
 		display("{error:Maximum number of recursions has been reached.}")
 		display("{error:Check if there are data duplicates or increase max_recursion_depth!}")
 		display("{error:Currently splitting along axis} " + strofreal(axis))
-		display("{error:Remaining data in this node (first row is ID):}")
+		display("{error:Remaining data in this node (first column is ID):}")
 		(index,data)
 		exit(1)
 	}
@@ -79,31 +79,28 @@ struct kd_node kd_tree_build(real matrix data, real matrix index, real scalar Nd
 		/* find median */
 		thisnode.value = median(data[,axis])
 		
-		/* pass on remaining data to left and right child nodes */
-		left_idx  = select(index, data[,axis] :<= thisnode.value)
-		right_idx = select(index, data[,axis] :>  thisnode.value)
+		/* distribute remaining data to left and right child nodes */
+		left_sel  = selectindex(data[,axis] :<= thisnode.value)
+		right_sel = selectindex(data[,axis] :> thisnode.value)
 		
 		/* address issue when one axis has duplicate values in which the median my fail to split the set */
-		if ( length(left_idx)==0 || length(right_idx)==0 ) {
-			/* if this happens, perturb the data by a "tiny" amount (this is very ad hoc) */
-			eps = max( (1e-8, (max(data[,axis])-min(data[,axis]))/10000) )
-			data[,axis] = data[,axis] + runiform( rows(data), 1 ) * eps
-			/* ... and re-compute the left and right sets */
-			left_idx  = select(index, data[,axis] :<= thisnode.value)
-			right_idx = select(index, data[,axis] :>  thisnode.value)
+		if ( length(right_sel)==0 ) {
+			/* if this happens, change the split rule */
+			left_sel  = selectindex(data[,axis] :< thisnode.value)
+			right_sel = selectindex(data[,axis] :>= thisnode.value)
+			/* now the left_sel could be empty but in that case, we should be */
+			/* able to split along another axis bec there are no duplicate points */
+			/* (in all axes) */
 		}
-		
-		left_set  = select(data,  data[,axis] :<= thisnode.value)
-		right_set = select(data,  data[,axis] :>  thisnode.value)
 		
 		/* cycle through the dimensions and continue with remaining points*/
 		axis_new = mod(axis, Ndim) + 1
-		if (rows(left_set)>=1) {
-			thisnode.left =  &kd_tree_build(left_set, left_idx, Ndim, axis_new, max_rec_depth-1)
+		if (rows(left_sel)>=1) {
+			thisnode.left =  &kd_tree_build(data[left_sel,], index[left_sel], Ndim, axis_new, max_rec_depth-1)
 		}
 		else thisnode.left = NULL
-		if (rows(right_set)>=1) {
-			thisnode.right = &kd_tree_build(right_set, right_idx, Ndim, axis_new, max_rec_depth-1)
+		if (rows(right_sel)>=1) {
+			thisnode.right = &kd_tree_build(data[right_sel,], index[right_sel], Ndim, axis_new, max_rec_depth-1)
 		}
 		else thisnode.right = NULL
 	}
