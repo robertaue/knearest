@@ -10,6 +10,8 @@ mata: mata clear
 mata: mata set matastrict on
 run mata_knn.do
 
+// See how the tree grows when there are duplicate points
+
 mata
 /* set up test data */
 
@@ -33,3 +35,63 @@ display("The tree consumes " + strofreal(kd_tree_size(root)) + " bytes.")
 display("The maximum depth of the tree is " + strofreal(kd_tree_depth(root)) + ".")
 
 end
+
+// Test how the tree grows when all data points are the same on one axis (but different on at least another one aixs)
+
+mata
+/* set up test data */
+data = (1,1\
+		1,2\
+		1,3\
+		1,4\
+		1,5)
+index = (1::rows(data))							/* has to be a col matrix */
+/* build the tree, inspect the result */
+root = kd_tree_build(data, index, 2, 1, max_rec_depth=20)
+liststruct(root)
+liststruct(*root.left)
+liststruct(*root.right)
+kd_tree_print(root)
+display("The tree consumes " + strofreal(kd_tree_size(root)) + " bytes.")
+display("The maximum depth of the tree is " + strofreal(kd_tree_depth(root)) + ".")
+end
+
+
+// Test how the tree grows when data points form a lower left triangle or a upper right triangle (cannot be splitted if we don't change the split rule)
+
+mata
+/* set up test data (lower left triangle)*/
+data = (1,1\
+		1,2\
+		1,3\
+		2,1\
+		3,1)
+index = (1::rows(data))							/* has to be a col matrix */
+/* build the tree, inspect the result */
+root = kd_tree_build(data, index, 2, 1, max_rec_depth=20)
+liststruct(root)
+liststruct(*root.left)
+liststruct(*root.right)
+kd_tree_print(root)
+display("The tree consumes " + strofreal(kd_tree_size(root)) + " bytes.")
+display("The maximum depth of the tree is " + strofreal(kd_tree_depth(root)) + ".")
+end
+
+mata
+/* set up test data (upper right triangle)*/
+data = (1,3\
+		2,3\
+		3,3\
+		3,2\
+		3,1)
+index = (1::rows(data))							/* has to be a col matrix */
+/* build the tree, inspect the result */
+root = kd_tree_build(data, index, 2, 1, max_rec_depth=20)
+liststruct(root)
+liststruct(*root.left)
+liststruct(*root.right)
+kd_tree_print(root)
+display("The tree consumes " + strofreal(kd_tree_size(root)) + " bytes.")
+display("The maximum depth of the tree is " + strofreal(kd_tree_depth(root)) + ".")
+end
+
