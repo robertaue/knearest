@@ -131,9 +131,9 @@ void kd_tree_print(struct kd_node scalar root) {
 }
 
 real scalar kd_tree_size(struct kd_node scalar root) {
-	/* returns the memory size of the search tree */
+	/* returns the number of nodes (terminal + split) of the search tree */
 	real scalar size
-	size = sizeof(root)
+	size = 1
 	if (root.left != NULL) {
 		size = size + kd_tree_size(*root.left)
 	}
