@@ -31,7 +31,7 @@ liststruct(root)
 liststruct(*root.left)
 liststruct(*root.right)
 kd_tree_print(root)
-display("The tree consumes " + strofreal(kd_tree_size(root)) + " bytes.")
+display("The tree has " + strofreal(kd_tree_size(root)) + " nodes.")
 display("The maximum depth of the tree is " + strofreal(kd_tree_depth(root)) + ".")
 
 end
@@ -52,7 +52,7 @@ liststruct(root)
 liststruct(*root.left)
 liststruct(*root.right)
 kd_tree_print(root)
-display("The tree consumes " + strofreal(kd_tree_size(root)) + " bytes.")
+display("The tree has " + strofreal(kd_tree_size(root)) + " nodes.")
 display("The maximum depth of the tree is " + strofreal(kd_tree_depth(root)) + ".")
 end
 
@@ -73,7 +73,7 @@ liststruct(root)
 liststruct(*root.left)
 liststruct(*root.right)
 kd_tree_print(root)
-display("The tree consumes " + strofreal(kd_tree_size(root)) + " bytes.")
+display("The tree has " + strofreal(kd_tree_size(root)) + " nodes.")
 display("The maximum depth of the tree is " + strofreal(kd_tree_depth(root)) + ".")
 end
 
@@ -91,7 +91,7 @@ liststruct(root)
 liststruct(*root.left)
 liststruct(*root.right)
 kd_tree_print(root)
-display("The tree consumes " + strofreal(kd_tree_size(root)) + " bytes.")
+display("The tree has " + strofreal(kd_tree_size(root)) + " nodes.")
 display("The maximum depth of the tree is " + strofreal(kd_tree_depth(root)) + ".")
 end
 
