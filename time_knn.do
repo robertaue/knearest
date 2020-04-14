@@ -35,7 +35,6 @@ max_depth = ceil(ln(rows(data))/ln(2))+1
 timer_on(1)
 root = kd_tree_build(data, index, 2, 1, max_rec_depth=max_depth)
 timer_off(1)
-kd_tree_size(root)
 
 timer_on(2)
 for (i=1; i<=rows(query_points); i++) {
@@ -56,19 +55,21 @@ for (i=1; i<=rows(query_points); i++){
 }
 timer_off(3)
 
-timer_on(4)
+/*timer_on(4)
 	knn(query_points, data, k, kni_2=., knd_2=., max_rec_depth=20)
-timer_off(4)
+timer_off(4) */
 
 /* check if results coincide */
 asserteq(rowsum(kni), rowsum(kni_check))
-asserteq(rowsum(kni_2), rowsum(kni_check))
-asserteq(rowsum(kni_2), rowsum(kni))
+/*asserteq(rowsum(kni_2), rowsum(kni_check))
+asserteq(rowsum(kni_2), rowsum(kni))*/
 
 
 timer()
 display("Time to build the tree: " + strofreal(timer_value(1)[1]) + "s")
 display("Relative runtime of kd tree search: " + strofreal(timer_value(2)[1] / timer_value(3)[1]))
 display("Time saved: " + strofreal(timer_value(3)[1] - (timer_value(2)[1] + timer_value(1)[1]))+"s")
+display("Size of the search tree: " + strofreal(kd_tree_size(root)/1e6) + "MB")
+display("Max depth of the search tree: " + strofreal(kd_tree_depth(root)))
 
 end
